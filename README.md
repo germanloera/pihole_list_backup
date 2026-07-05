@@ -30,13 +30,14 @@ chmod +x pihole_backup.sh
 
 ### Menu
 
-When launched, the script shows an interactive menu:
+When launched, the script asks you to select a language (English or Spanish), then shows an interactive menu:
 
 ```
-  1) Generar respaldo
-  2) Iniciar servidor HTTP
-  3) Subir a GitHub
-  0) Salir
+  1) Generate backup
+  2) Start HTTP server
+  3) Upload to GitHub
+  4) Change language
+  0) Exit
 ```
 
 #### Option 1 — Generate backup
