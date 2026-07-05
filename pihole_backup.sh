@@ -255,7 +255,8 @@ choose_language() {
     echo "  1) $(t LANG_EN)"
     echo "  2) $(t LANG_ES)"
     echo ""
-    read -r -p "  ${CYAN}Select / Seleccionar:${NC} " lang_choice
+    echo -e "${CYAN}Select / Seleccionar:${NC}"
+    read -r lang_choice
     case "$lang_choice" in
         2)
             LANG_CODE="es"
