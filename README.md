@@ -28,18 +28,34 @@ chmod +x pihole_backup.sh
 ./pihole_backup.sh
 ```
 
-The script will:
+### Menu
 
-1. Elevate privileges with `sudo` if needed
-2. Validate the Pi-hole database
-3. Extract all blocked domains
-4. Ask where to save the list (press Enter for the default path)
-5. Write the list (merging if the file already exists)
-6. Ask if you want to push to GitHub (optional)
+When launched, the script shows an interactive menu:
 
-### GitHub upload
+```
+  1) Generar respaldo
+  2) Iniciar servidor HTTP
+  3) Subir a GitHub
+  0) Salir
+```
 
-If you choose to upload, you'll be prompted for:
+#### Option 1 — Generate backup
+
+1. Elevates privileges with `sudo` if needed
+2. Validates the Pi-hole database
+3. Extracts all blocked domains
+4. Asks where to save the list (press Enter for `~/pihole_blocklist.txt`)
+5. Writes the list (merges if the file already exists — no duplicates)
+6. Optionally pushes to GitHub
+7. Optionally starts a local HTTP server to serve the list
+
+#### Option 2 — Start HTTP server
+
+Asks for an existing blocklist file and serves it via HTTP. Prints access URLs (localhost + LAN IPs) and waits for `Ctrl+C`.
+
+#### Option 3 — Upload to GitHub
+
+Asks for an existing blocklist file, then prompts for:
 
 - **GitHub username**
 - **Repository** (`user/repo` or just `repo`)
@@ -47,18 +63,7 @@ If you choose to upload, you'll be prompted for:
 - **Email** (used for the commit)
 - **Clone mode** — either clone the remote repo, or use the current directory as the local repo
 
-The script will then clone/pull, merge the list, commit, and push.
-
-### Local HTTP server
-
-If you choose to start the HTTP server, Python's built-in `http.server` will serve the list file on port `8080` (or the next available port). The script prints:
-
-```
-http://localhost:8080/pihole_blocklist.txt
-http://192.168.1.10:8080/pihole_blocklist.txt   (from other devices on your network)
-```
-
-Press `Ctrl+C` to stop the server.
+Then clones/pulls, merges the list (deduplicating), commits, and pushes.
 
 ## Output format
 

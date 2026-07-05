@@ -152,7 +152,11 @@ get_domains() {
     echo "$domains"
 }
 
-get_output_path() {
+expand_path() {
+    echo "${1/#\~/$HOME}"
+}
+
+ask_output_path() {
     local default_path="$HOME/pihole_blocklist.txt"
 
     echo -e "${CYAN}[?] ¿Dónde deseas guardar la lista de dominios?${NC}"
@@ -162,12 +166,32 @@ get_output_path() {
     if [[ -z "$user_path" ]]; then
         OUTPUT_PATH="$default_path"
     else
-        OUTPUT_PATH="$user_path"
+        OUTPUT_PATH=$(expand_path "$user_path")
     fi
 
-    # Expandir ~ si es necesario
-    OUTPUT_PATH="${OUTPUT_PATH/#\~/$HOME}"
     echo -e "${GREEN}[✓] La lista se guardará en: $OUTPUT_PATH${NC}"
+}
+
+ask_list_path() {
+    local prompt="${1:-¿Cuál es la ruta del archivo de la lista?}"
+    local default_path="$HOME/pihole_blocklist.txt"
+
+    echo -e "${CYAN}[?] $prompt${NC}"
+    echo -e "    (Presiona Enter para usar: $default_path)"
+    read -r -p "    Ruta: " user_path
+
+    if [[ -z "$user_path" ]]; then
+        LIST_PATH="$default_path"
+    else
+        LIST_PATH=$(expand_path "$user_path")
+    fi
+
+    if [[ ! -f "$LIST_PATH" ]]; then
+        echo -e "${RED}[ERROR] El archivo no existe: $LIST_PATH${NC}"
+        exit 1
+    fi
+
+    echo -e "${GREEN}[✓] Usando archivo: $LIST_PATH${NC}"
 }
 
 write_domains() {
@@ -411,49 +435,104 @@ start_http_server() {
 }
 
 # ============================================================
-# Main
+# Main - Menú principal
 # ============================================================
 
-main() {
+show_menu() {
     echo ""
     echo -e "${CYAN}╔═══════════════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║        Pi-hole List Backup Tool              ║${NC}"
     echo -e "${CYAN}║     Respaldo de dominios bloqueados          ║${NC}"
     echo -e "${CYAN}╚═══════════════════════════════════════════════╝${NC}"
     echo ""
+    echo -e "  ${GREEN}1)${NC} Generar respaldo"
+    echo -e "  ${GREEN}2)${NC} Iniciar servidor HTTP"
+    echo -e "  ${GREEN}3)${NC} Subir a GitHub"
+    echo -e "  ${GREEN}0)${NC} Salir"
+    echo ""
+}
 
-    # Verificar requisitos
+menu_generar_respaldo() {
     check_root "$@"
     check_prerequisites
 
-    # Obtener dominios
     local domains
     domains=$(get_domains)
 
-    # Preguntar ruta de salida
-    get_output_path
-
-    # Escribir la lista
+    ask_output_path
     write_domains "$domains"
 
-    # Preguntar por GitHub
     ask_github
     if [[ "$GITHUB_ENABLED" == true ]]; then
         ask_github_config
         upload_to_github "$OUTPUT_PATH"
     fi
 
-    # Preguntar por servidor HTTP
     ask_http_server
     if [[ "$HTTP_SERVER_ENABLED" == true ]]; then
         start_http_server "$OUTPUT_PATH"
     fi
 
     echo ""
-    echo -e "${GREEN}╔═══════════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║  ¡Proceso completado exitosamente!          ║${NC}"
-    echo -e "${GREEN}╚═══════════════════════════════════════════════╝${NC}"
+    echo -e "${GREEN}[✓] Proceso completado exitosamente.${NC}"
+}
+
+menu_servidor_http() {
+    if ! command -v python3 &>/dev/null; then
+        echo -e "${YELLOW}[!] python3 no está instalado. Instalando...${NC}"
+        install_package "python3" "python"
+    fi
+
+    ask_list_path "¿Cuál es la ruta del archivo de lista que deseas servir?"
+    start_http_server "$LIST_PATH"
+
     echo ""
+    echo -e "${GREEN}[✓] Servidor HTTP finalizado.${NC}"
+}
+
+menu_subir_github() {
+    check_git
+
+    ask_list_path "¿Cuál es la ruta del archivo de lista que deseas subir?"
+
+    GITHUB_ENABLED=true
+    ask_github_config
+    upload_to_github "$LIST_PATH"
+
+    echo ""
+    echo -e "${GREEN}[✓] Subida a GitHub completada.${NC}"
+}
+
+main() {
+    local choice
+
+    while true; do
+        show_menu
+        read -r -p "  Selecciona una opción: " choice
+
+        case "$choice" in
+            1)
+                menu_generar_respaldo
+                ;;
+            2)
+                menu_servidor_http
+                ;;
+            3)
+                menu_subir_github
+                ;;
+            0)
+                echo -e "${GREEN}[✓] Saliendo.${NC}"
+                exit 0
+                ;;
+            *)
+                echo -e "${RED}[ERROR] Opción inválida.${NC}"
+                ;;
+        esac
+
+        echo ""
+        echo -e "${YELLOW}[!] Presiona Enter para volver al menú...${NC}"
+        read -r
+    done
 }
 
 main "$@"
