@@ -136,9 +136,12 @@ get_domains() {
     #   type 2 = black (regex), type 3 = white (regex)
     local domains
     domains=$(sqlite3 "$PIHOLE_DB" "
-        SELECT domain FROM domainlist
-        WHERE type IN (0, 2)
-        ORDER BY domain ASC;
+     SELECT DISTINCT g.domain
+        FROM gravity g
+        INNER JOIN adlist a ON g.adlist_id = a.id
+        LEFT JOIN domainlist d ON g.domain = d.domain AND d.type = 0 AND d.enabled = 1
+        WHERE a.enabled = 1 
+            AND d.domain IS NULL;
     ")
 
     if [[ -z "$domains" ]]; then
