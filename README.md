@@ -8,15 +8,16 @@ A bash script to export all blocked domains from a Pi-hole instance into a plain
 - **Interactive output path** — defaults to `~/pihole_blocklist.txt`
 - **Idempotent** — if the output file already exists, new domains are merged in (no duplicates)
 - **Auto-elevation** — requests `sudo` automatically if not run as root (required to read Pi-hole's database)
-- **Prerequisites check** — verifies `sqlite3` is installed and `gravity.db` exists and is readable
+- **Auto-install dependencies** — automatically installs `sqlite3`, `git`, and `python3` if missing (supports `apt`, `apt-get`, `dnf`, `yum`, `pacman`, and `brew`)
+- **Prerequisites check** — verifies `gravity.db` exists and is readable
 - **Optional GitHub push** — can clone a remote repo or use the local one to commit and push the blocklist
 - **Optional local HTTP server** — serves the list via HTTP so you can access it from any device on your network
 
 ## Requirements
 
 - Pi-hole (with `gravity.db` at `/etc/pihole/gravity.db`)
-- `sqlite3` CLI
-- `git` (only needed for GitHub upload)
+
+All other dependencies (`sqlite3`, `git`, `python3`) are installed automatically if missing.
 
 ## Usage
 

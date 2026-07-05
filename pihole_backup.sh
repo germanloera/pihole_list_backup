@@ -26,12 +26,88 @@ check_root() {
     fi
 }
 
+detect_pkg_manager() {
+    if command -v apt &>/dev/null; then
+        PKG_MANAGER="apt"
+        PKG_INSTALL="apt install -y"
+    elif command -v apt-get &>/dev/null; then
+        PKG_MANAGER="apt-get"
+        PKG_INSTALL="apt-get install -y"
+    elif command -v dnf &>/dev/null; then
+        PKG_MANAGER="dnf"
+        PKG_INSTALL="dnf install -y"
+    elif command -v yum &>/dev/null; then
+        PKG_MANAGER="yum"
+        PKG_INSTALL="yum install -y"
+    elif command -v pacman &>/dev/null; then
+        PKG_MANAGER="pacman"
+        PKG_INSTALL="pacman -S --noconfirm"
+    elif command -v brew &>/dev/null; then
+        PKG_MANAGER="brew"
+        PKG_INSTALL="brew install"
+    else
+        PKG_MANAGER=""
+        PKG_INSTALL=""
+    fi
+}
+
+install_package() {
+    local pkg_name="$1"
+    local brew_name="${2:-$pkg_name}"
+
+    if [[ -z "$PKG_MANAGER" ]]; then
+        detect_pkg_manager
+    fi
+
+    if [[ -z "$PKG_MANAGER" ]]; then
+        echo -e "${RED}[ERROR] No se pudo detectar un gestor de paquetes compatible.${NC}"
+        echo "Instala '$pkg_name' manualmente y vuelve a ejecutar el script."
+        exit 1
+    fi
+
+    echo -e "${YELLOW}[*] Instalando '$pkg_name'...${NC}"
+
+    if [[ "$PKG_MANAGER" == "brew" ]]; then
+        local user="${SUDO_USER:-$USER}"
+        if [[ $EUID -eq 0 ]]; then
+            sudo -u "$user" brew install "$brew_name" 2>/dev/null || {
+                echo -e "${RED}[ERROR] No se pudo instalar '$pkg_name' con Homebrew.${NC}"
+                echo "Ejecuta manualmente: brew install $brew_name"
+                exit 1
+            }
+        else
+            brew install "$brew_name" 2>/dev/null || {
+                echo -e "${RED}[ERROR] No se pudo instalar '$pkg_name' con Homebrew.${NC}"
+                exit 1
+            }
+        fi
+    else
+        $PKG_INSTALL "$pkg_name" 2>/dev/null || {
+            echo -e "${RED}[ERROR] No se pudo instalar '$pkg_name'.${NC}"
+            echo "Instálalo manualmente y vuelve a ejecutar el script."
+            exit 1
+        }
+    fi
+
+    if command -v "$pkg_name" &>/dev/null; then
+        echo -e "${GREEN}[✓] '$pkg_name' instalado correctamente.${NC}"
+    else
+        # brew no siempre deja el binario en PATH inmediatamente
+        echo -e "${GREEN}[✓] Instalación de '$pkg_name' completada.${NC}"
+    fi
+}
+
 check_prerequisites() {
     # Verificar que sqlite3 esté instalado
     if ! command -v sqlite3 &>/dev/null; then
-        echo -e "${RED}[ERROR] sqlite3 no está instalado.${NC}"
-        echo "Instálalo con: sudo apt install sqlite3 (o brew install sqlite3 en macOS)"
-        exit 1
+        echo -e "${YELLOW}[!] sqlite3 no está instalado. Instalando...${NC}"
+        install_package "sqlite3"
+    fi
+
+    # Verificar que python3 esté instalado (para el servidor HTTP)
+    if ! command -v python3 &>/dev/null; then
+        echo -e "${YELLOW}[!] python3 no está instalado. Instalando...${NC}"
+        install_package "python3" "python"
     fi
 
     # Verificar que la base de datos de Pi-hole existe
@@ -131,9 +207,8 @@ write_domains() {
 
 check_git() {
     if ! command -v git &>/dev/null; then
-        echo -e "${RED}[ERROR] git no está instalado.${NC}"
-        echo "Instálalo con: sudo apt install git (o brew install git en macOS)"
-        return 1
+        echo -e "${YELLOW}[!] git no está instalado. Instalando...${NC}"
+        install_package "git"
     fi
     return 0
 }
