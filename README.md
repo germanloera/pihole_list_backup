@@ -1,23 +1,18 @@
-# Pi-hole List Backup
+# Pi-hole Simple List Backup
 
-A bash script to export all blocked domains from a Pi-hole instance into a plain-text blocklist, with optional GitHub upload.
+This little script connects to your Pi-hole's database, pulls out every blocked domain, and saves them into a clean text file — ready to import back anytime.
 
-## Features
 
-- **Reads from Pi-hole's SQLite database** (`/etc/pihole/gravity.db`) — extracts exact and regex blocked domains
-- **Interactive output path** — defaults to `~/pihole_blocklist.txt`
-- **Idempotent** — if the output file already exists, new domains are merged in (no duplicates)
-- **Auto-elevation** — requests `sudo` automatically if not run as root (required to read Pi-hole's database)
-- **Auto-install dependencies** — automatically installs `sqlite3`, `git`, and `python3` if missing (supports `apt`, `apt-get`, `dnf`, `yum`, `pacman`, and `brew`)
-- **Prerequisites check** — verifies `gravity.db` exists and is readable
-- **Optional GitHub push** — can clone a remote repo or use the local one to commit and push the blocklist
-- **Optional local HTTP server** — serves the list via HTTP so you can access it from any device on your network
+## What it does
 
-## Requirements
-
-- Pi-hole (with `gravity.db` at `/etc/pihole/gravity.db`)
-
-All other dependencies (`sqlite3`, `git`, `python3`) are installed automatically if missing.
+- Reads every blocked domain from Pi-hole's `gravity.db` database
+- Saves them as a plain txt file, one domain per line
+- If the file already exists, it just adds the new ones — no duplicates
+- If you're not running as root, it'll ask for `sudo` (needed to read Pi-hole's files)
+- If `sqlite3`, `git`, or `python3` are missing, it installs them automatically — supports `apt`, `dnf`, `yum`, `pacman`, and `brew`
+- Optionally uploads the list to a GitHub repository
+- Optionally starts a local HTTP server so you can grab the list from any device on your network
+- Available in English and Spanish — pick your language at startup or switch anytime
 
 ## Usage
 
@@ -28,9 +23,7 @@ chmod +x pihole_backup.sh
 ./pihole_backup.sh
 ```
 
-### Menu
-
-When launched, the script asks you to select a language (English or Spanish), then shows an interactive menu:
+First, pick your language. Then you'll see a menu like this:
 
 ```
   1) Generate backup
@@ -40,43 +33,46 @@ When launched, the script asks you to select a language (English or Spanish), th
   0) Exit
 ```
 
-#### Option 1 — Generate backup
+### Option 1 — Full backup
 
-1. Elevates privileges with `sudo` if needed
-2. Validates the Pi-hole database
-3. Extracts all blocked domains
-4. Asks where to save the list (press Enter for `~/pihole_blocklist.txt`)
-5. Writes the list (merges if the file already exists — no duplicates)
-6. Optionally pushes to GitHub
-7. Optionally starts a local HTTP server to serve the list
+This is the main event. It'll:
 
-#### Option 2 — Start HTTP server
+1. Elevate to `sudo` if needed
+2. Check that everything it needs is installed (and install anything missing)
+3. Pull all blocked domains from your Pi-hole database
+4. Ask where to save the file (just press Enter to use `~/pihole_blocklist.txt`)
+5. Write the list — if the file already exists, it merges in only the new stuff
+6. Ask if you want to push it to GitHub
+7. Ask if you want to serve it over HTTP
 
-Asks for an existing blocklist file and serves it via HTTP. Prints access URLs (localhost + LAN IPs) and waits for `Ctrl+C`.
+### Option 2 — Serve an existing list
 
-#### Option 3 — Upload to GitHub
+Already have a blocklist file? Pick this option, point it to the file, and the script starts a temporary web server. It prints the URL for your local machine and any other devices on your network — handy for copying the list to another Pi-hole or an ad-blocker.
 
-Asks for an existing blocklist file, then prompts for:
+Press `Ctrl+C` to stop the server.
 
-- **GitHub username**
-- **Repository** (`user/repo` or just `repo`)
-- **Personal access token** (with `repo` scope — create one at [GitHub Settings > Developer settings](https://github.com/settings/tokens))
-- **Email** (used for the commit)
-- **Clone mode** — either clone the remote repo, or use the current directory as the local repo
+### Option 3 — Upload to GitHub
 
-Then clones/pulls, merges the list (deduplicating), commits, and pushes.
+Select this to push an existing blocklist to a GitHub repo. You'll need:
 
-## Output format
+- Your **GitHub username**
+- The **repository name** (like `user/repo` or just `repo`)
+- A **personal access token** with `repo` scope (grab one at [GitHub Settings > Developer settings](https://github.com/settings/tokens))
+- Your **GitHub email** (for the commit)
+- Whether to **clone the repo** fresh or use the current directory
 
-One domain per line, plain text — compatible with Pi-hole's "Import" feature or any ad-blocker that accepts domain lists.
+The script clones (if needed), merges the list (no duplicates), commits, and pushes.
+
+## What the output looks like
+
+Just a plain text file — one domain per line. Works with Pi-hole's import tool, uBlock Origin, AdGuard, and pretty much anything that accepts a domain list.
 
 ```
 example.com
 tracker.net
 ad.doubleclick.net
-...
 ```
 
-## License
+## Requirements
 
-MIT
+Just a working Pi-hole installation. The script takes care of the rest.
