@@ -55,6 +55,7 @@ STR_DB_NOT_ACCESSIBLE_EN="Cannot access the Pi-hole database."
 STR_DB_NOT_ACCESSIBLE_HINT_EN='Check the file permissions: $1'
 
 STR_DOMAIN_EXTRACTING_EN="Fetching blocked domains from the database..."
+STR_DOMAIN_SAVING_EN="Saving file..."
 STR_DOMAIN_NONE_EN="No blocked domains found in the database."
 STR_DOMAIN_COUNT_EN='Found $1 blocked domains.'
 
@@ -153,6 +154,7 @@ STR_DB_NOT_ACCESSIBLE_ES="No se puede acceder a la base de datos de Pi-hole."
 STR_DB_NOT_ACCESSIBLE_HINT_ES='Verifica los permisos del archivo: $1'
 
 STR_DOMAIN_EXTRACTING_ES="Obteniendo dominios bloqueados desde la base de datos..."
+STR_DOMAIN_SAVING_EN="Guardando archivo..."
 STR_DOMAIN_NONE_ES="No se encontraron dominios bloqueados en la base de datos."
 STR_DOMAIN_COUNT_ES='Se encontraron $1 dominios bloqueados.'
 
@@ -441,6 +443,9 @@ ask_list_path() {
 }
 
 write_domains() {
+
+    echo -e "${CYAN}[*] $(t DOMAIN_SAVING)${NC}"
+
     local domains="$1"
     local tmpfile
     tmpfile=$(mktemp)
